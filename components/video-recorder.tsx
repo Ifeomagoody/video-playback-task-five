@@ -20,7 +20,7 @@ export default function VideoRecorder({ onRecordingComplete  }: VideoRecorderPro
   const MAX_RECORDING_TIME = 120 // this is equivalent to 2 minutes in seconds
 
   useEffect(() => {
-    
+    if(!navigator )return
     navigator.mediaDevices  // allow camera permission before proceeding
       .getUserMedia({ video: true, audio: true })
       .then(() => setCameraPermission(true))
@@ -68,18 +68,21 @@ export default function VideoRecorder({ onRecordingComplete  }: VideoRecorderPro
   }, [])
 
   const startRecording = useCallback(() => {
+    if (typeof window === "undefined") return; // Prevent execution during SSR
     setIsRecording(true)
     setRecordingTime(0)
 
     const stream = webcamRef.current?.video?.srcObject as MediaStream
     if (stream) {
-      mediaRecorderRef.current = new RecordRTC(stream, {
-        type: "video",
-        mimeType: "video/webm",
-        bitsPerSecond: 128000,
-      })
+      import("recordrtc").then(({ default: RecordRTC }) => {
+        mediaRecorderRef.current = new RecordRTC(stream, {
+          type: "video",
+          mimeType: "video/webm",
+          bitsPerSecond: 128000,
+        });
 
-      mediaRecorderRef.current.startRecording()
+        mediaRecorderRef.current.startRecording();
+      });
     }
   }, [])
 
